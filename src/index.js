@@ -35,7 +35,7 @@ export default {
         } catch (e) { out[k] = { err: String(e), ms: Date.now() - t0 }; }
       }
       const tk = env.TELEGRAM_BOT_TOKEN || '';
-      out.token_shape = { len: tk.length, has_colon: tk.includes(':'), has_space: /\s/.test(tk), starts_bot: /^bot/i.test(tk) };
+      out.token_shape = { bot_id: tk.split(':')[0], len: tk.length, has_colon: tk.includes(':'), has_space: /\s/.test(tk), starts_bot: /^bot/i.test(tk) };
       out.colo = req.cf?.colo || null;
       return json(out);
     }
