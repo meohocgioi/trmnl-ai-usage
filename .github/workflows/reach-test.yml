@@ -1,0 +1,12 @@
+name: Thử kết nối chatgpt.com (tạm thời)
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gọi API usage khi chưa đăng nhập (mong đợi 401 dạng JSON nếu không bị chặn)
+        run: |
+          for u in https://chatgpt.com/backend-api/wham/usage https://chatgpt.com/api/auth/session; do
+            code=$(curl -s -o body.txt -w '%{http_code}' -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36' -H 'accept: application/json' "$u")
+            echo "$u -> HTTP $code"; head -c 200 body.txt; echo; echo
+          done
