@@ -82,7 +82,7 @@ export async function setupWebhook(env, origin) {
     for (let i = 0; i < 3; i++) {
       r = await tg(env, method, body);
       const wait = r?.parameters?.retry_after;
-      if (r.ok || r.error_code !== 429 || !wait || wait > 40) break;
+      if (r.ok || r.error_code !== 429 || !wait || wait > 40 || i >= 1) break;
       await new Promise((res) => setTimeout(res, (wait + 1) * 1000));
     }
     return r;
