@@ -75,13 +75,30 @@ const MAIN_KB = [
 
 export async function setupWebhook(env, origin) {
   if (!env.TELEGRAM_BOT_TOKEN) return { ok: false, error: 'Chưa có TELEGRAM_BOT_TOKEN' };
-  const webhook = await tg(env, 'setWebhook', {
-    url: origin + '/tg',
-    secret_token: await secretToken(env),
-    allowed_updates: ['message', 'callback_query'],
-    drop_pending_updates: false,
-  });
-  const commands = await tg(env, 'setMyCommands', { commands: COMMANDS });
+  const url = origin + '/tg';
+  // Telegram đôi khi trả 429 — chờ đúng retry_after rồi thử lại (tối đa 2 lần)
+  const retry = async (method, body) => {
+    let r;
+    for (let i = 0; i < 3; i++) {
+      r = await tg(env, method, body);
+      const wait = r?.parameters?.retry_after;
+      if (r.ok || r.error_code !== 429 || !wait || wait > 40) break;
+      await new Promise((res) => setTimeout(res, (wait + 1) * 1000));
+    }
+    return r;
+  };
+  const me = await tg(env, 'getMe', {});
+  let info = await tg(env, 'getWebhookInfo', {});
+  let webhook = { ok: true, skipped: 'đã đúng URL' };
+  if (info?.result?.url !== url) {
+    webhook = await retry('setWebhook', {
+      url,
+      secret_token: await secretToken(env),
+      allowed_updates: ['message', 'callback_query'],
+    });
+    info = await tg(env, 'getWebhookInfo', {});
+  }
+  const commands = await retry('setMyCommands', { commands: COMMANDS });
   let notified = false;
   const owner = await ownerId(env);
   if (owner && env.VERSION && (await env.KV.get('notifiedVersion')) !== env.VERSION) {
@@ -89,7 +106,16 @@ export async function setupWebhook(env, origin) {
     await env.KV.put('notifiedVersion', env.VERSION);
     notified = true;
   }
-  return { ok: !!webhook.ok, version: env.VERSION || null, notified, webhook, commands };
+  const hook = info?.result || {};
+  return {
+    ok: hook.url === url,
+    version: env.VERSION || null,
+    bot: me?.result ? '@' + me.result.username : me,
+    webhook_url: hook.url || null,
+    webhook_last_error: hook.last_error_message || null,
+    pending: hook.pending_update_count ?? null,
+    notified, webhook, commands,
+  };
 }
 
 // ---------- Nội dung ----------
