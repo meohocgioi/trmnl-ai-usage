@@ -1,0 +1,17 @@
+name = "trmnl-ai-usage"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+# Mỗi 10 phút: làm mới số liệu + kiểm tra cảnh báo (cookie hết hạn, Full reset sắp hết hạn)
+[triggers]
+crons = ["*/10 * * * *"]
+
+# KV lưu cookie, số liệu gần nhất, cài đặt.
+# id được GitHub Actions (scripts/ensure-kv.mjs) tự tìm/tạo khi deploy.
+[[kv_namespaces]]
+binding = "KV"
+id = "__KV_ID__"
+
+[observability]
+enabled = true

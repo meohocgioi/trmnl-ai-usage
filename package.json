@@ -1,0 +1,13 @@
+{
+  "name": "trmnl-ai-usage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "check": "wrangler deploy --dry-run --outdir dist"
+  },
+  "devDependencies": {
+    "wrangler": "^4.166.0"
+  }
+}

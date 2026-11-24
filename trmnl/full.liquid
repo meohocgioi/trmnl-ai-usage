@@ -1,0 +1,91 @@
+{% assign c = claude %}
+<div class="layout" style="padding:0;">
+<div class="cu sz-full">
+  <div class="cu-hd">
+    <div class="cu-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.2-5.2"/></svg></div>
+    <div class="cu-title">CLAUDE USAGE</div>
+    {% if c.plan != "" %}<div class="cu-plan">{{ c.plan | upcase }}</div>{% endif %}
+    <div class="cu-sp"></div>
+    {% if c.error_code == "cookie" %}<div class="cu-warn">⚠ COOKIE HẾT HẠN</div>{% elsif c.error != "" and c.has_data %}<div class="cu-warn">⚠ SỐ LIỆU CŨ</div>{% endif %}
+    <div class="cu-upd">Cập nhật {{ c.updated }}</div>
+  </div>
+
+  {% if c.has_data %}
+  <div class="cu-meters">
+    {% assign m = c.session %}
+    <div class="cu-m{% if m.full %} cu-full{% endif %}">
+      <div class="cu-pct">{{ m.pct }}<small>%</small></div>
+      <div class="cu-mb">
+        <div class="cu-row">
+          <span class="cu-lbl">Phiên hiện tại</span>
+          <span class="cu-rs">{% if m.idle %}Chưa bắt đầu{% else %}Reset <b>{{ m.reset_at }}</b><span class="cu-in"> · còn <span class="L">{{ m.reset_in }}</span><span class="S">{{ m.reset_in_short }}</span></span>{% endif %}</span>
+        </div>
+        <div class="cu-bar">
+          {% if m.fill > 0 %}<div class="cu-fill{% if m.fill >= 99 %} f100{% endif %}" style="width:{{ m.fill }}%;"></div>{% endif %}
+          {% if m.pace %}<div class="cu-pace" style="left:{{ m.pace }}%;"></div>{% endif %}
+        </div>
+        <div class="cu-sub">
+          <span>{% if m.idle %}Tính từ tin nhắn đầu tiên · chu kỳ 5 giờ{% else %}Chu kỳ 5 giờ · đã qua {{ m.pace }}% thời gian{% endif %}</span>
+          <span class="r">{% if m.idle %}{% else %}{{ m.pace_label }}{% endif %}</span>
+        </div>
+      </div>
+    </div>
+
+    {% if c.week %}{% assign m = c.week %}
+    <div class="cu-m{% if m.full %} cu-full{% endif %}">
+      <div class="cu-pct">{{ m.pct }}<small>%</small></div>
+      <div class="cu-mb">
+        <div class="cu-row">
+          <span class="cu-lbl">Tuần này</span>
+          <span class="cu-rs">Reset <b>{{ m.reset_at }}</b><span class="cu-in"> · còn <span class="L">{{ m.reset_in }}</span><span class="S">{{ m.reset_in_short }}</span></span></span>
+        </div>
+        <div class="cu-bar">
+          {% if m.fill > 0 %}<div class="cu-fill{% if m.fill >= 99 %} f100{% endif %}" style="width:{{ m.fill }}%;"></div>{% endif %}
+          {% if m.pace %}<div class="cu-pace" style="left:{{ m.pace }}%;"></div>{% endif %}
+        </div>
+        <div class="cu-sub">
+          <span>Chu kỳ 7 ngày · đã qua {{ m.pace }}% thời gian</span>
+          <span class="r">{{ m.pace_label }}</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if c.reset %}{% assign r = c.reset %}
+  <div class="cu-fr{% if r.urgent %} urgent{% endif %}">
+    <div class="cu-fr-tag">
+      <div class="t">FULL RESET</div>
+      <div class="cu-dots">{% for d in r.dots %}<span class="cu-dot{% if d %} on{% endif %}"></span>{% endfor %}<span class="n">{{ r.left }}/{{ r.total }}</span></div>
+    </div>
+    <div class="cu-fr-mid">
+      <div class="cu-fr-big">còn {{ r.remaining }}</div>
+      <div class="cu-fr-cap">{% if r.urgent %}⚠ SẮP HẾT HẠN — dùng ngay kẻo mất lượt{% elsif r.left > 0 %}{% if r.usable %}Sẵn sàng dùng · xoá sạch phiên + tuần{% else %}Chưa dùng được lúc này{% endif %}{% else %}Đã dùng hết lượt{% endif %}</div>
+    </div>
+    <div class="cu-fr-end">
+      <div class="k">Hết hạn</div>
+      <div class="v">{{ r.expires | split: " · " | first }}</div>
+      <div class="d">{{ r.expires | split: " · " | last }}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="cu-fr none"><div class="cu-fr-tag"><div class="t">FULL RESET</div><div class="cu-dots"><span class="n">0</span></div></div><div class="cu-fr-mid">Không có lượt Full reset nào</div></div>
+  {% endif %}
+
+  <div class="cu-ft">
+    <span>{% for x in c.parts %}<span class="cu-chip">{{ x.name }}</span> {{ x.pct }}%{% unless forloop.last %} · {% endunless %}{% endfor %}</span>
+    <span class="r">Số liệu lúc {{ c.data_at }}</span>
+  </div>
+  {% else %}
+  <div class="cu-empty">
+    {% if c.error_code == "nokey" %}
+    <div class="b">Chưa có cookie Claude</div>
+    <div class="s">Mở bot Telegram và gửi <b>/cookie</b> để bắt đầu</div>
+    {% else %}
+    <div class="b">Chưa đọc được usage</div>
+    <div class="s">{{ c.error }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+</div>
