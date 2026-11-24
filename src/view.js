@@ -33,6 +33,8 @@ export function buildPayload(data, error, now = Date.now()) {
     ok: !!data && !error,
     has_data: !!data,
     error: error ? error.message : '',
+    // Chỉ coi là "số liệu cũ" khi bản lưu đã quá 30 phút (lỗi lẻ tẻ thì cron 5 phút sẽ tự lấy lại)
+    stale: !!(error && data && now - data.at > 30 * 60000),
     error_code: error ? error.code : '',
     data_at: data ? stamp(data.at) : '',
     plan: data?.plan || '',

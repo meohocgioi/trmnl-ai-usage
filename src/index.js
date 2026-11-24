@@ -27,7 +27,8 @@ export default {
 
     // Dữ liệu cho TRMNL (Polling) — đếm ngược tính đúng lúc TRMNL lấy dữ liệu
     if (p === '/trmnl') {
-      const { data, error } = await getUsage(env);
+      // Số liệu được cron làm mới mỗi 5 phút; TRMNL chỉ gọi claude.ai khi bản lưu đã cũ hơn 10 phút
+      const { data, error } = await getUsage(env, { maxAge: 10 * 60000 });
       return json({ claude: buildPayload(data, error) });
     }
 

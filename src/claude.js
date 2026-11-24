@@ -133,15 +133,16 @@ export function normalize(j) {
 }
 
 // Dữ liệu cho màn hình: dùng cache 2 phút, lỗi thì trả bản gần nhất + thông báo lỗi
-export async function getUsage(env, { force = false } = {}) {
+export async function getUsage(env, { force = false, maxAge = CACHE_MS } = {}) {
   const last = await env.KV.get('claude:last', 'json');
-  if (!force && last && Date.now() - last.at < CACHE_MS) return { data: last, error: null };
+  if (!force && last && Date.now() - last.at < maxAge) return { data: last, error: null };
   try {
     const data = await fetchUsage(env);
     await env.KV.put('claude:last', JSON.stringify(data));
     await env.KV.delete('claude:err');
     return { data, error: null };
   } catch (e) {
+    console.log('claude fetch failed', e.code, e.message);
     const err = { code: e.code || 'http', message: e.message, at: Date.now() };
     await env.KV.put('claude:err', JSON.stringify(err), { expirationTtl: 7 * 86400 });
     return { data: last, error: err };

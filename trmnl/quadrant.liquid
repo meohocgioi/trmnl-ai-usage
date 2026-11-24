@@ -6,7 +6,7 @@
     <div class="cu-title">CLAUDE USAGE</div>
     {% if c.plan != "" %}<div class="cu-plan">{{ c.plan | upcase }}</div>{% endif %}
     <div class="cu-sp"></div>
-    {% if c.error_code == "cookie" %}<div class="cu-warn">⚠ COOKIE HẾT HẠN</div>{% elsif c.error != "" and c.has_data %}<div class="cu-warn">⚠ SỐ LIỆU CŨ</div>{% endif %}
+    {% if c.error_code == "cookie" %}<div class="cu-warn">⚠ COOKIE HẾT HẠN</div>{% elsif c.stale %}<div class="cu-warn">⚠ SỐ LIỆU CŨ</div>{% endif %}
     <div class="cu-upd">Cập nhật {{ c.updated }}</div>
   </div>
 
