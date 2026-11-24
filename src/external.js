@@ -1,3 +1,4 @@
+import { normalize } from './claude.js';
 // Số liệu ChatGPT + Gemini: do GitHub Actions (scripts/collect.mjs) lấy rồi gửi về /ingest.
 // Worker kích hoạt workflow đó mỗi 15 phút bằng GH_TOKEN.
 
@@ -17,6 +18,17 @@ export async function handleIngest(req, env) {
   const body = await req.json().catch(() => null);
   if (!body) return new Response('bad json', { status: 400 });
   const saved = {};
+  // Claude lấy từ GitHub: chỉ ghi khi mới hơn bản Worker đang có
+  if (body.claude?.ok && body.claude.raw) {
+    const data = normalize(body.claude.raw);
+    data.at = body.at || Date.now();
+    const last = await env.KV.get('claude:last', 'json');
+    if (!last || data.at > last.at) {
+      await env.KV.put('claude:last', JSON.stringify({ ...data, via: 'github' }));
+      await env.KV.delete('claude:err');
+    }
+    saved.claude = 'ok';
+  } else if (body.claude) saved.claude = 'error:' + (body.claude.error?.code || '');
   for (const k of EXT) {
     const v = body[k];
     if (v == null) { await env.KV.delete('ext:' + k); saved[k] = 'none'; continue; }
@@ -43,7 +55,7 @@ export async function maybeDispatch(env, force = false) {
   const now = Date.now();
   const last = Number(await env.KV.get('collect:lastDispatch')) || 0;
   const info = (await env.KV.get('collect:lastIngest', 'json')) || null;
-  const anyConfigured = !info || Object.values(info.saved || {}).some((s) => s !== 'none');
+  const anyConfigured = !info || Object.entries(info.saved || {}).some(([k, s]) => k !== 'claude' && s !== 'none') || info.saved?.claude === 'ok';
   const every = anyConfigured ? EVERY_MS : IDLE_EVERY_MS;
   if (!force && now - last < every - 30000) return { skipped: 'not yet' };
   await env.KV.put('collect:lastDispatch', String(now));

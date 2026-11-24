@@ -57,6 +57,28 @@ async function chatgpt(raw) {
   };
 }
 
+// ---------------- Claude (dự phòng khi Worker bị claude.ai chặn) ----------------
+async function claude(raw) {
+  const key = (String(raw).match(/sessionKey=([^;\s]+)/) || String(raw).match(/(sk-ant-[\w-]+)/) || [])[1];
+  if (!key) return fail('cookie', 'Cookie Claude không hợp lệ');
+  const h = { cookie: `sessionKey=${key}`, 'user-agent': UA, accept: 'application/json', 'accept-language': 'en-US,en;q=0.9', 'anthropic-client-platform': 'web_claude_ai', referer: 'https://claude.ai/settings/usage' };
+  const get = async (path) => {
+    const r = await fetch('https://claude.ai' + path, { headers: h });
+    if (r.headers.get('cf-mitigated')) throw Object.assign(new Error(`claude.ai chặn (HTTP ${r.status})`), { code: 'blocked' });
+    if (r.status === 401 || r.status === 403) throw Object.assign(new Error('Cookie Claude hết hạn hoặc đã đăng xuất'), { code: 'cookie' });
+    if (!r.ok) throw Object.assign(new Error(`claude.ai HTTP ${r.status}`), { code: 'http' });
+    return r.json();
+  };
+  try {
+    const orgs = await get('/api/organizations');
+    const org = (orgs.find((o) => (o.capabilities || []).some((c) => /claude_(pro|max)/.test(c))) || orgs.find((o) => (o.capabilities || []).includes('chat')) || orgs[0])?.uuid;
+    if (!org) return fail('http', 'Không tìm thấy tổ chức Claude');
+    return { ok: true, raw: await get(`/api/organizations/${org}/usage?cedar_ember=1&skip_spend=1`) };
+  } catch (e) {
+    return fail(e.code || 'http', e.message);
+  }
+}
+
 // ---------------- Gemini ----------------
 // Đổi "6:14 PM" / "Nov 24 at 2:14 PM" (giờ VN) thành mốc thời gian
 const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
@@ -130,14 +152,16 @@ async function main() {
 
   const out = {
     at: Date.now(),
+    claude: await run('claude', claude, process.env.CLAUDE_SESSION_KEY),
     chatgpt: await run('chatgpt', chatgpt, process.env.CHATGPT_COOKIE),
     gemini: await run('gemini', gemini, process.env.GEMINI_COOKIE),
   };
 
   // Log chỉ ghi tóm tắt, không ghi cookie/token
-  for (const k of ['chatgpt', 'gemini']) {
+  for (const k of ['claude', 'chatgpt', 'gemini']) {
     const v = out[k];
-    console.log(k + ':', v == null ? 'chưa cài' : v.ok ? `OK · phiên ${v.session?.pct ?? '?'}% · tuần ${v.week?.pct ?? '?'}%` : `LỖI ${v.error.code}: ${v.error.message}`);
+    const s = v?.raw ? { session: { pct: v.raw.five_hour?.utilization }, week: { pct: v.raw.seven_day?.utilization } } : v;
+    console.log(k + ':', v == null ? 'chưa cài' : v.ok ? `OK · phiên ${s.session?.pct ?? '?'}% · tuần ${s.week?.pct ?? '?'}%` : `LỖI ${v.error.code}: ${v.error.message}`);
   }
 
   const key = createHash('sha256').update('ingest:' + (process.env.TELEGRAM_BOT_TOKEN || '')).digest('hex');

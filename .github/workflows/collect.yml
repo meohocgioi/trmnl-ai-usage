@@ -1,4 +1,4 @@
-name: Lấy usage ChatGPT + Gemini
+name: Lấy usage (Claude dự phòng + ChatGPT + Gemini)
 
 # Worker tự kích hoạt mỗi 15 phút (workflow_dispatch). Lịch dưới đây chỉ là dự phòng.
 on:
@@ -29,6 +29,7 @@ jobs:
 
       - name: Lấy usage và gửi về Worker
         env:
+          CLAUDE_SESSION_KEY: ${{ secrets.CLAUDE_SESSION_KEY }}
           CHATGPT_COOKIE: ${{ secrets.CHATGPT_COOKIE }}
           GEMINI_COOKIE: ${{ secrets.GEMINI_COOKIE }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
