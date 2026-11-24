@@ -8,7 +8,7 @@ Plugin TRMNL hiện usage gói Claude của bạn, giống trang **claude.ai →
 
 Có đủ 4 cỡ màn hình TRMNL (full, nửa ngang, nửa dọc, 1/4). Chạy hoàn toàn trên **Cloudflare Workers** (không cần máy chủ). Điều khiển bằng bot Telegram, có cảnh báo khi cookie hết hạn, khi Full reset sắp hết hạn mà chưa dùng, khi usage tuần ≥ 90%.
 
-Code mới chỉ được deploy khi bấm **/update** trên Telegram (hoặc *Run workflow* trên GitHub).
+Code mới được **tự deploy trong vòng 15 phút** sau khi đẩy lên GitHub, hoặc ngay khi bấm **/update** trên Telegram.
 
 ## Dữ liệu lấy từ đâu
 Worker gọi API mà chính trang Usage của claude.ai dùng (`/api/organizations/{org}/usage?cedar_ember=1`) bằng **cookie đăng nhập `sessionKey`** của bạn.
@@ -41,7 +41,10 @@ Markup: dán `trmnl/shared.liquid` vào ô **Shared** (chứa toàn bộ giao di
 Sửa giao diện: sửa các file `trmnl/_*.liquid` rồi chạy `node scripts/gen-views.mjs` (tạo lại `shared.liquid` + 4 file cỡ màn hình).
 
 ## Lệnh Telegram
-`/status` `/cookie` `/preview` `/preview all` `/settings` `/trmnl` `/update` `/version` `/help`
+`/status` `/cookie` `/preview` `/preview all` `/setting` `/trmnl` `/update` `/version` `/help`
+
+- `/setting`: tích chọn hiện **Claude** / **ChatGPT** trên TRMNL (chỉ Claude → màn hình chi tiết; có ChatGPT → màn hình gộp) + bật/tắt cảnh báo.
+- Số liệu và code **tự cập nhật 15 phút/lần** (Worker so commit mới nhất trên GitHub với bản đang chạy, khác thì tự deploy). `/update` ép làm ngay cả hai.
 
 ## ChatGPT + Gemini
 Lấy bằng **GitHub Actions** (workflow *Lấy usage ChatGPT + Gemini*, file `scripts/collect.mjs`), vì chatgpt.com chặn máy chủ Cloudflare. Worker tự kích hoạt workflow này mỗi 15 phút; GitHub gửi số liệu về `/ingest`. Lệnh bot `/refresh` để lấy ngay.

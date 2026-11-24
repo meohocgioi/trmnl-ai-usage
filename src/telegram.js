@@ -2,6 +2,7 @@
 import { getUsage, fetchUsage, parseCookie, getKey } from './claude.js';
 import { buildPayload, buildExt } from './view.js';
 import { getExternal, maybeDispatch, EXT } from './external.js';
+import { checkUpdate } from './updater.js';
 import { trmnlPreview } from './trmnl.js';
 import { esc, stamp } from './util.js';
 
@@ -53,7 +54,7 @@ export async function ownerId(env) {
 }
 
 // ---------- Cài đặt ----------
-export const DEFAULT_SETTINGS = { alertReset: true, alertWeek: true, alertSession: true };
+export const DEFAULT_SETTINGS = { showClaude: true, showChatgpt: true, alertReset: true, alertWeek: true, alertSession: true };
 export async function getSettings(env) {
   return { ...DEFAULT_SETTINGS, ...((await env.KV.get('settings', 'json')) || {}) };
 }
@@ -62,10 +63,10 @@ const COMMANDS = [
   { command: 'status', description: '📊 Usage Claude hiện tại' },
   { command: 'cookie', description: '🔑 Gửi cookie Claude: /cookie sk-ant-...' },
   { command: 'preview', description: '🖼 Xem trước màn hình TRMNL' },
-  { command: 'refresh', description: '🔄 Lấy ngay usage ChatGPT + Gemini' },
-  { command: 'settings', description: '⚙️ Cài đặt cảnh báo' },
+
+  { command: 'setting', description: '⚙️ Chọn dịch vụ hiện trên TRMNL + cảnh báo' },
   { command: 'trmnl', description: '🔗 Polling URL cho TRMNL' },
-  { command: 'update', description: '🔄 Cập nhật code mới nhất từ GitHub' },
+  { command: 'update', description: '🔄 Cập nhật ngay: số liệu + code mới nhất' },
   { command: 'version', description: '🏷 Phiên bản đang chạy' },
   { command: 'help', description: '❓ Hướng dẫn' },
 ];
@@ -166,19 +167,29 @@ const COOKIE_HELP =
   `🔒 Bot sẽ xoá tin nhắn chứa cookie ngay sau khi lưu. Cookie mở được tài khoản Claude của bạn — không gửi cho ai khác.\n` +
   `ℹ️ Nếu bạn bấm <b>Log out</b> trên trình duyệt đó, cookie mất hiệu lực → bot sẽ báo để bạn gửi cookie mới.`;
 
-function settingsView(s) {
+function settingsView(s, note = '') {
   const on = (v) => (v ? '✅ BẬT' : '⬜ TẮT');
+  const box = (v) => (v ? '☑️' : '⬜');
   const text =
-    `<b>⚙️ Cảnh báo qua Telegram</b>\n\n` +
+    `<b>⚙️ Cài đặt</b>\n\n` +
+    `<b>📺 Hiện trên TRMNL</b> (bấm để tích / bỏ tích)\n` +
+    `${box(s.showClaude)} Claude\n${box(s.showChatgpt)} ChatGPT\n` +
+    `<i>Chỉ tích Claude → màn hình chi tiết Claude. Tích cả hai → màn hình gộp AI USAGE.\nTRMNL đổi ở lần làm mới tới (≤ 15 phút) — hoặc /preview để xem ngay.</i>\n\n` +
+    `<b>🔔 Cảnh báo qua Telegram</b>\n` +
     `♻️ Nhắc dùng <b>Full reset</b> trước khi hết hạn (còn 3 ngày, 1 ngày): <b>${on(s.alertReset)}</b>\n` +
-    `📅 Usage tuần đạt 90% / 100%: <b>${on(s.alertWeek)}</b>\n` +
-    `⏱ Phiên hiện tại chạm 100% (kèm giờ reset): <b>${on(s.alertSession)}</b>\n\n` +
-    `<i>Cookie hết hạn luôn được báo.</i>`;
+    `📅 Claude tuần đạt 90% / 100%: <b>${on(s.alertWeek)}</b>\n` +
+    `⏱ Claude phiên chạm 100% (kèm giờ reset): <b>${on(s.alertSession)}</b>\n` +
+    `<i>Cookie hết hạn luôn được báo.</i>\n\n` +
+    `🔄 Số liệu + code tự cập nhật <b>15 phút/lần</b> · ép cập nhật ngay: /update` +
+    (note ? `\n\n${note}` : '');
   const kb = [
-    [{ text: `♻️ Full reset: ${s.alertReset ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertReset' }],
-    [{ text: `📅 Tuần 90%: ${s.alertWeek ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertWeek' }],
-    [{ text: `⏱ Phiên 100%: ${s.alertSession ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertSession' }],
-    [{ text: '⬅️ Menu', callback_data: 'status' }],
+    [
+      { text: `${box(s.showClaude)} Claude`, callback_data: 'tog:showClaude' },
+      { text: `${box(s.showChatgpt)} ChatGPT`, callback_data: 'tog:showChatgpt' },
+    ],
+    [{ text: `♻️ Nhắc Full reset: ${s.alertReset ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertReset' }],
+    [{ text: `📅 Tuần 90%: ${s.alertWeek ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertWeek' }, { text: `⏱ Phiên 100%: ${s.alertSession ? 'BẬT' : 'TẮT'}`, callback_data: 'tog:alertSession' }],
+    [{ text: '🖼 Xem trước TRMNL', callback_data: 'preview' }, { text: '⬅️ Menu', callback_data: 'status' }],
   ];
   return { text, kb };
 }
@@ -188,11 +199,11 @@ const HELP =
   `/status – usage Claude hiện tại\n` +
   `/cookie sk-ant-... – lưu cookie Claude (bot tự xoá tin nhắn)\n` +
   `/preview – xem trước màn hình TRMNL (đúng như lần refresh tới)\n` +
-  `/refresh – lấy ngay usage ChatGPT + Gemini (bình thường tự lấy 15 phút/lần)\n` +
+
   `/preview all – xem cả 4 cỡ (full, nửa ngang, nửa dọc, 1/4)\n` +
-  `/settings – bật/tắt cảnh báo\n` +
+  `/setting – chọn hiện Claude / ChatGPT trên TRMNL, bật/tắt cảnh báo\n` +
   `/trmnl – Polling URL để cài plugin trên TRMNL\n` +
-  `/update – cập nhật code mới nhất từ GitHub (chỉ khi bạn bấm)\n` +
+  `/update – cập nhật ngay số liệu + code mới nhất (bình thường tự làm 15 phút/lần)\n` +
   `/version – phiên bản đang chạy`;
 
 const VIEW_NAME = {
@@ -310,8 +321,13 @@ async function processUpdate(env, upd, origin) {
     if (data.startsWith('tog:')) {
       const s = await getSettings(env);
       const k = data.slice(4);
-      if (k in DEFAULT_SETTINGS) { s[k] = !s[k]; await env.KV.put('settings', JSON.stringify(s)); }
-      const v = settingsView(s);
+      let note = '';
+      if (k in DEFAULT_SETTINGS) {
+        s[k] = !s[k];
+        if (!s.showClaude && !s.showChatgpt) { s[k] = true; note = '⚠️ Phải hiện ít nhất 1 dịch vụ.'; }
+        else await env.KV.put('settings', JSON.stringify(s));
+      }
+      const v = settingsView(s, note);
       return editOrSend(env, chatId, mid, v.text, v.kb);
     }
     return;
@@ -339,6 +355,7 @@ async function processUpdate(env, upd, origin) {
     case '/cookie':
       if (!arg) return sendMsg(env, chatId, COOKIE_HELP);
       return saveCookie(env, chatId, msg.message_id, arg);
+    case '/setting':
     case '/settings': {
       const v = settingsView(await getSettings(env));
       return sendMsg(env, chatId, v.text, v.kb);
@@ -355,21 +372,28 @@ async function processUpdate(env, upd, origin) {
       return sendMsg(env, chatId, `<b>🖼 Cài đặt TRMNL</b>\n\nStrategy: <b>Polling</b>\nPolling URL:\n<code>${origin}/trmnl</code>`);
     case '/version':
       return sendMsg(env, chatId, `🏷 Phiên bản đang chạy: <code>${esc(env.VERSION || 'chưa rõ')}</code>\n📝 ${esc(env.VERSION_MSG || '')}`);
+    case '/refresh':
     case '/update': {
-      if (!env.GH_TOKEN) {
-        return sendMsg(env, chatId,
-          `⚠️ Chưa có quyền cập nhật.\nThêm secret <code>GH_TOKEN</code> (GitHub token, quyền <b>Actions: Read and write</b> cho repo ${esc(REPO(env))}) rồi chạy <b>Deploy Worker</b> 1 lần trên GitHub.`);
+      const wait = await sendMsg(env, chatId, '🔄 <b>Đang cập nhật…</b>');
+      const wid = wait?.result?.message_id;
+      const L = ['🔄 <b>Cập nhật ngay</b>', ''];
+      // 1) Số liệu: Claude trực tiếp + GitHub (Claude + ChatGPT)
+      const { data, error } = await getUsage(env, { force: true });
+      L.push(data && !error ? `✅ Claude: đọc trực tiếp lúc ${stamp(data.at)}` : `⏳ Claude: đọc trực tiếp không được (${esc(error?.message || '?')}) — chờ GitHub`);
+      const d = await maybeDispatch(env, true);
+      L.push(d.status === 204 ? '⏳ GitHub đang lấy số liệu Claude + ChatGPT (~1 phút)' : `❌ Không kích hoạt được GitHub (${esc(JSON.stringify(d))})`);
+      // 2) Code mới nhất
+      if (!env.GH_TOKEN) L.push('⚠️ Chưa có secret <code>GH_TOKEN</code> nên không cập nhật code được.');
+      else {
+        try {
+          const u = await checkUpdate(env, { force: true });
+          L.push(u.isNew
+            ? `🚀 Có code mới <code>${esc(u.latest.sha)}</code> (${esc(u.latest.msg)}) — đang deploy, bot báo ✅ khi xong`
+            : `✅ Code đã mới nhất (<code>${esc(u.current || '?')}</code>) — vẫn deploy lại cho chắc`);
+        } catch (e) { L.push(`❌ Kiểm tra code lỗi: ${esc(e.message)}`); }
       }
-      const r = await fetch(`https://api.github.com/repos/${REPO(env)}/actions/workflows/deploy.yml/dispatches`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${env.GH_TOKEN}`, accept: 'application/vnd.github+json',
-          'user-agent': 'trmnl-ai-usage-bot', 'content-type': 'application/json',
-        },
-        body: JSON.stringify({ ref: 'main' }),
-      });
-      if (r.status !== 204) return sendMsg(env, chatId, `❌ Không gọi được GitHub (HTTP ${r.status}).\n<code>${esc((await r.text()).slice(0, 300))}</code>`);
-      return sendMsg(env, chatId, `🔄 <b>Đang cập nhật…</b>\nĐang chạy: <code>${esc(env.VERSION || '?')}</code>\nKhoảng 1 phút nữa bot sẽ báo ✅ khi xong.`);
+      L.push('', '<i>Khoảng 1–2 phút nữa gõ /status hoặc /preview để xem.</i>');
+      return editOrSend(env, chatId, wid, L.join('\n'), MAIN_KB);
     }
     default:
       if (cmd) return sendMsg(env, chatId, '🤔 Không hiểu lệnh.\n\n' + HELP, MAIN_KB);

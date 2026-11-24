@@ -2,7 +2,8 @@ import { getUsage } from './claude.js';
 import { buildPayload, buildExt, claudeRow } from './view.js';
 import { handleIngest, getExternal, maybeDispatch, EXT } from './external.js';
 import { hhmm, stamp } from './util.js';
-import { handleTelegram, setupWebhook } from './telegram.js';
+import { handleTelegram, setupWebhook, getSettings } from './telegram.js';
+import { autoUpdate } from './updater.js';
 import { runAlerts } from './alerts.js';
 
 const json = (o, status = 200) =>
@@ -24,12 +25,19 @@ async function autoConnect(env) {
 export async function screenPayload(env, data, error, now = Date.now()) {
   const claude = buildPayload(data, error, now);
   const ext = await getExternal(env);
-  const rows = [claudeRow(claude)];
+  const s = await getSettings(env);
+  const show = { claude: s.showClaude !== false, chatgpt: s.showChatgpt !== false, gemini: true };
+  const rows = [];
+  if (show.claude) rows.push(claudeRow(claude));
   for (const k of EXT) {
-    const r = buildExt(k, ext[k], now);
+    const r = show[k] ? buildExt(k, ext[k], now) : null;
     if (r) rows.push(r);
   }
-  return { updated: hhmm(now), updated_full: stamp(now), multi: rows.length > 1, count: rows.length, rows, claude };
+  if (!rows.length) rows.push(claudeRow(claude)); // phòng khi không còn dịch vụ nào
+  // Chỉ Claude → màn hình chi tiết Claude; còn lại → màn hình gộp (kể cả chỉ có ChatGPT)
+  const multi = !(rows.length === 1 && rows[0].key === 'claude');
+  if (!rows.some((r) => r.key === 'claude')) claude.reset = null; // ẩn dải Full reset khi không hiện Claude
+  return { updated: hhmm(now), updated_full: stamp(now), multi, count: rows.length, rows, claude };
 }
 
 export default {
@@ -80,5 +88,6 @@ export default {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('alerts', e)));
     ctx.waitUntil(autoConnect(env).catch((e) => console.error('autoConnect', e)));
     ctx.waitUntil(maybeDispatch(env).catch((e) => console.error('dispatch', e)));
+    ctx.waitUntil(autoUpdate(env).catch((e) => console.error('autoUpdate', e)));
   },
 };
