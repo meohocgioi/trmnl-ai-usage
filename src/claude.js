@@ -16,7 +16,13 @@ export function parseCookie(text) {
   return m ? m[1] : null;
 }
 
-export const getKey = async (env) => (await env.KV.get('claude:key')) || env.CLAUDE_SESSION_KEY || null;
+// Cookie có thể đến từ bot (/cookie → KV) hoặc GitHub Secret CLAUDE_SESSION_KEY.
+// Thử cookie gửi qua bot trước; nếu hết hạn thì thử cookie trong GitHub Secret.
+const keyList = async (env) => {
+  const ks = [await env.KV.get('claude:key'), parseCookie(env.CLAUDE_SESSION_KEY || '')].filter(Boolean);
+  return [...new Set(ks)];
+};
+export const getKey = async (env) => (await keyList(env))[0] || null;
 
 async function call(key, path) {
   const r = await fetch(BASE + path, {
@@ -62,8 +68,18 @@ async function orgId(env, key, force = false) {
 
 // Gọi API usage (kèm dữ liệu "Full reset" = cedar_ember)
 export async function fetchUsage(env, keyOverride) {
-  const key = keyOverride || (await getKey(env));
-  if (!key) throw new ClaudeError('nokey', 'Chưa có cookie Claude');
+  if (keyOverride) return fetchWith(env, keyOverride, true);
+  const keys = await keyList(env);
+  if (!keys.length) throw new ClaudeError('nokey', 'Chưa có cookie Claude');
+  let last;
+  for (const k of keys) {
+    try { return await fetchWith(env, k, false); } catch (e) { last = e; if (e.code !== 'cookie') throw e; }
+  }
+  throw last;
+}
+
+async function fetchWith(env, key, fresh) {
+  const keyOverride = fresh ? key : null;
   let org = await orgId(env, key, !!keyOverride);
   let raw;
   try {

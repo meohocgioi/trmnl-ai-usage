@@ -52,8 +52,9 @@ jobs:
           TELEGRAM_OWNER_ID: ${{ secrets.TELEGRAM_OWNER_ID }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TRMNL_MCP_KEY: ${{ secrets.TRMNL_MCP_KEY }}
+          CLAUDE_SESSION_KEY: ${{ secrets.CLAUDE_SESSION_KEY }}
         run: |
-          for NAME in TELEGRAM_BOT_TOKEN TELEGRAM_OWNER_ID GH_TOKEN TRMNL_MCP_KEY; do
+          for NAME in TELEGRAM_BOT_TOKEN TELEGRAM_OWNER_ID GH_TOKEN TRMNL_MCP_KEY CLAUDE_SESSION_KEY; do
             VAL="${!NAME}"
             if [ -n "$VAL" ]; then
               printf '%s' "$VAL" | npx wrangler secret put "$NAME"
