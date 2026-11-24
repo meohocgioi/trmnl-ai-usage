@@ -51,4 +51,5 @@ Lấy bằng **GitHub Actions** (workflow *Lấy usage ChatGPT + Gemini*, file `
 | `CHATGPT_COOKIE` | dòng `cookie:` của 1 request tới chatgpt.com (DevTools → Network) |
 | `GEMINI_COOKIE` | dòng `cookie:` của 1 request tới gemini.google.com |
 
-Bỏ trống secret nào thì dịch vụ đó không hiện. Khi có từ 2 dịch vụ trở lên, TRMNL chuyển sang màn hình gộp **AI USAGE**.
+Bỏ trống secret nào thì dịch vụ đó không hiện (hiện tại **không dùng Gemini** — bỏ trống `GEMINI_COOKIE`).
+Claude cũng được bộ lấy số liệu GitHub đọc 15 phút/lần (dùng `CLAUDE_SESSION_KEY`), vì claude.ai hay chặn máy chủ Cloudflare ở Mỹ/châu Âu. Khi có từ 2 dịch vụ trở lên, TRMNL chuyển sang màn hình gộp **AI USAGE**.

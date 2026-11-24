@@ -84,9 +84,12 @@ export function buildExt(key, rec, now = Date.now()) {
   if (rec.session || rec.week) {
     p.has_data = true;
     p.data_at = stamp(rec.at);
+    // Chu kỳ chưa bắt đầu (0% và mốc reset = bây giờ + nguyên chu kỳ, tính từ lúc GitHub lấy số liệu)
+    const notStarted = (b, sec) => b && !b.pct && b.resetsAt && b.resetsAt - (rec.at || now) >= sec * 1000 - 120000;
     p.session = bar(rec.session, (rec.session?.windowSec || 18000) * 1000, now) || null;
-    if (p.session && (!rec.session.resetsAt || rec.session.resetsAt <= now)) p.session.idle = true;
+    if (p.session && (!rec.session.resetsAt || rec.session.resetsAt <= now || notStarted(rec.session, rec.session.windowSec || 18000))) p.session.idle = true;
     p.week = bar(rec.week, (rec.week?.windowSec || 604800) * 1000, now);
+    if (p.week && notStarted(rec.week, rec.week.windowSec || 604800)) p.week.idle = true;
     // Bộ lấy số liệu chạy 15 phút/lần → coi là cũ khi quá 45 phút
     p.stale = now - (rec.at || 0) > 45 * 60000;
   }
