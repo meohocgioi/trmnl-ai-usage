@@ -38,7 +38,17 @@ Tạo **Private Plugin** → Strategy **Polling** → Polling URL:
 `https://trmnl-ai-usage.meohocgioi.workers.dev/trmnl`
 Markup: dán `trmnl/shared.liquid` vào ô **Shared** (chứa toàn bộ giao diện), và 4 file `full` / `half_horizontal` / `half_vertical` / `quadrant` (mỗi file 1 dòng) vào từng ô tương ứng.
 
-Sửa giao diện: sửa `trmnl/_style.liquid` (CSS) / `trmnl/_body.liquid` (HTML + Liquid) rồi chạy `node scripts/gen-views.mjs`.
+Sửa giao diện: sửa các file `trmnl/_*.liquid` rồi chạy `node scripts/gen-views.mjs` (tạo lại `shared.liquid` + 4 file cỡ màn hình).
 
 ## Lệnh Telegram
 `/status` `/cookie` `/preview` `/preview all` `/settings` `/trmnl` `/update` `/version` `/help`
+
+## ChatGPT + Gemini
+Lấy bằng **GitHub Actions** (workflow *Lấy usage ChatGPT + Gemini*, file `scripts/collect.mjs`), vì chatgpt.com chặn máy chủ Cloudflare. Worker tự kích hoạt workflow này mỗi 15 phút; GitHub gửi số liệu về `/ingest`. Lệnh bot `/refresh` để lấy ngay.
+
+| Secret | Giá trị |
+|---|---|
+| `CHATGPT_COOKIE` | dòng `cookie:` của 1 request tới chatgpt.com (DevTools → Network) |
+| `GEMINI_COOKIE` | dòng `cookie:` của 1 request tới gemini.google.com |
+
+Bỏ trống secret nào thì dịch vụ đó không hiện. Khi có từ 2 dịch vụ trở lên, TRMNL chuyển sang màn hình gộp **AI USAGE**.

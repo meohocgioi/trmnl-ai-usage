@@ -108,6 +108,83 @@
   .sz-q .cu-ft{display:none;}
   .sz-q .cu-empty .b{font-size:18px;}.sz-q .cu-empty .s{font-size:12px;}
 </style>
+<style>
+  /* ===== Màn hình gộp nhiều dịch vụ ===== */
+  .mu{--pad:16px;--gap:10px;display:flex;flex-direction:column;gap:var(--gap);width:100%;height:100%;box-sizing:border-box;padding:var(--pad) calc(var(--pad) + 4px);font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#000;background:#fff;}
+  .mu *{box-sizing:border-box;}
+  .mu-rows{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--gap);}
+  .mu-row{flex:1 1 0;min-height:0;display:flex;align-items:stretch;border:3px solid #000;border-radius:12px;overflow:hidden;}
+  .mu-name{flex:none;width:150px;background:#000;color:#fff;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 14px;}
+  .mu-name .n{font-size:24px;font-weight:900;letter-spacing:.5px;line-height:1;white-space:nowrap;}
+  .mu-name .p{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:1px;border:2px solid #fff;border-radius:999px;padding:2px 8px;text-transform:uppercase;}
+  .mu-name .w{align-self:flex-start;font-size:11px;font-weight:900;background:#fff;color:#000;border-radius:4px;padding:2px 5px;white-space:nowrap;}
+  .mu-name .fr{font-size:11px;font-weight:700;white-space:nowrap;display:none;}
+  .mu-m{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 16px;}
+  .mu-m + .mu-m{border-left:2px solid #000;}
+  .mu-top{display:flex;align-items:baseline;gap:8px;white-space:nowrap;}
+  .mu-lbl{flex:1;min-width:0;font-size:14px;font-weight:900;letter-spacing:1px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;}
+  .mu-pct{flex:none;font-size:36px;font-weight:900;letter-spacing:-1px;line-height:.9;}
+  .mu-pct small{font-size:.5em;letter-spacing:0;}
+  .mu-full .mu-pct{text-decoration:underline;text-decoration-thickness:3px;}
+  .mu-bar{position:relative;height:18px;border:2px solid #000;border-radius:6px;}
+  .mu-fill{position:absolute;left:0;top:0;bottom:0;background:#000;border-radius:3px 0 0 3px;}
+  .mu-fill.f100{border-radius:3px;}
+  .mu-pace{position:absolute;top:-6px;bottom:-6px;width:3px;margin-left:-1px;background:#000;border:1px solid #fff;outline:1px solid #000;}
+  .mu-rs{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mu-rs b{font-weight:900;}
+  .mu-msg{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 16px;gap:4px;}
+  .mu-msg .b{font-size:20px;font-weight:900;}
+  .mu-msg .s{font-size:13px;}
+  /* Dải Full reset (Claude) */
+  .mu-fr{flex:none;display:flex;align-items:center;gap:14px;height:46px;border:3px solid #000;border-radius:12px;padding:0 14px 0 0;overflow:hidden;white-space:nowrap;}
+  .mu-fr .t{align-self:stretch;display:flex;align-items:center;gap:8px;background:#000;color:#fff;padding:0 14px;font-size:14px;font-weight:900;letter-spacing:1px;}
+  .mu-fr .t i{font-style:normal;font-weight:700;letter-spacing:0;font-size:12px;}
+  .mu-fr .big{font-size:24px;font-weight:900;}
+  .mu-fr .sp{flex:1;}
+  .mu-fr .e{font-size:14px;}.mu-fr .e b{font-size:18px;font-weight:900;}
+  .mu-fr.urgent{background:#000;color:#fff;}
+  .mu-fr.urgent .t{border-right:2px solid #fff;}
+  .mu .S{display:none;}
+
+  /* ===== Nửa ngang (800×240) ===== */
+  .sz-hh .mu{--pad:8px;--gap:6px;}
+  .sz-hh .mu .cu-hd,.sz-hh .mu-fr{display:none;}
+  .sz-hh .mu-row{border-width:2px;border-radius:8px;}
+  .sz-hh .mu-name{width:116px;padding:4px 10px;gap:3px;}
+  .sz-hh .mu-name .n{font-size:17px;}.sz-hh .mu-name .p{display:none;}.sz-hh .mu-name .fr{display:block;}
+  .sz-hh .mu-m{padding:3px 12px;gap:3px;}
+  .sz-hh .mu-lbl{font-size:11px;}.sz-hh .mu-pct{font-size:22px;}
+  .sz-hh .mu-bar{height:11px;border-width:2px;border-radius:4px;}.sz-hh .mu-pace{top:-4px;bottom:-4px;width:2px;}
+  .sz-hh .mu-rs{font-size:11px;}
+  .sz-hh .mu .L{display:none;}.sz-hh .mu .S{display:inline;}
+
+  /* ===== Nửa dọc (400×480) ===== */
+  .sz-hv .mu{--pad:10px;--gap:8px;}
+  .sz-hv .mu .cu-title{font-size:16px;letter-spacing:.5px;}.sz-hv .mu .cu-upd{font-size:12px;}
+  .sz-hv .mu-row{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;border-width:2px;border-radius:10px;}
+  .sz-hv .mu-name{grid-column:1 / 3;width:auto;flex-direction:row;align-items:center;justify-content:flex-start;padding:4px 10px;gap:8px;}
+  .sz-hv .mu-msg{grid-column:1 / 3;padding:4px 10px;}.sz-hv .mu-msg .b{font-size:15px;}.sz-hv .mu-msg .s{font-size:11px;}
+  .sz-hv .mu-name .n{font-size:16px;}.sz-hv .mu-name .p{font-size:10px;padding:1px 6px;border-width:1px;}
+  .sz-hv .mu-m{padding:4px 9px;gap:4px;}
+  .sz-hv .mu-m + .mu-m{border-left:1px solid #000;}
+  .sz-hv .mu-lbl{font-size:10px;letter-spacing:.3px;}.sz-hv .mu-pct{font-size:24px;}
+  .sz-hv .mu-bar{height:11px;border-radius:4px;}.sz-hv .mu-pace{top:-4px;bottom:-4px;width:2px;}
+  .sz-hv .mu-rs{font-size:10px;}
+  .sz-hv .mu .L{display:none;}.sz-hv .mu .S{display:inline;}
+  .sz-hv .mu-fr{height:auto;flex-wrap:wrap;gap:2px 8px;padding:0 8px 4px 0;border-width:2px;border-radius:10px;}
+  .sz-hv .mu-fr .t{align-self:auto;width:100%;padding:3px 8px;font-size:12px;}.sz-hv .mu-fr .big{font-size:17px;padding-left:8px;}.sz-hv .mu-fr .sp{display:none;}.sz-hv .mu-fr .e{font-size:11px;}.sz-hv .mu-fr .e b{font-size:13px;}
+
+  /* ===== 1/4 (400×240) ===== */
+  .sz-q .mu{--pad:6px;--gap:5px;}
+  .sz-q .mu .cu-hd,.sz-q .mu-fr,.sz-q .mu-rs{display:none;}
+  .sz-q .mu-row{border-width:2px;border-radius:7px;}
+  .sz-q .mu-name{width:78px;padding:2px 7px;gap:2px;}
+  .sz-q .mu-name .n{font-size:13px;}.sz-q .mu-name .p,.sz-q .mu-name .w{display:none;}.sz-q .mu-name .fr{display:block;font-size:9px;}
+  .sz-q .mu-m{padding:2px 7px;gap:2px;}
+  .sz-q .mu-lbl{font-size:9px;letter-spacing:.3px;}.sz-q .mu-pct{font-size:17px;}
+  .sz-q .mu-bar{height:8px;border-width:1px;border-radius:3px;}.sz-q .mu-pace{top:-3px;bottom:-3px;width:2px;}
+  .sz-q .mu-msg .b{font-size:12px;}.sz-q .mu-msg .s{display:none;}
+</style>
 {% capture cu_body %}
 {% assign c = claude %}
 <div class="cu">
@@ -195,6 +272,61 @@
     <div class="b">Chưa đọc được usage</div>
     <div class="s">{{ c.error }}</div>
     {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endcapture %}
+{% capture cu_multi %}
+{% assign fr = claude.reset %}
+<div class="mu">
+  <div class="cu-hd">
+    <div class="cu-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.2-5.2"/></svg></div>
+    <div class="cu-title">AI USAGE</div>
+    <div class="cu-sp"></div>
+    <div class="cu-upd">Cập nhật {{ updated }}</div>
+  </div>
+
+  <div class="mu-rows">
+    {% for r in rows %}
+    <div class="mu-row">
+      <div class="mu-name">
+        <div class="n">{{ r.name }}</div>
+        {% if r.plan != "" %}<div class="p">{{ r.plan }}</div>{% endif %}
+        {% if r.error_code == "cookie" %}<div class="w">⚠ COOKIE</div>{% elsif r.stale %}<div class="w">⚠ CŨ {{ r.data_at | split: " " | first }}</div>{% endif %}
+        {% if r.key == "claude" and fr %}<div class="fr">♻ {{ fr.left }}/{{ fr.total }} · {{ fr.remaining_short }}</div>{% endif %}
+      </div>
+      {% if r.has_data %}
+        {% assign pairs = "session,week" | split: "," %}
+        {% for k in pairs %}
+          {% if k == "session" %}{% assign m = r.session %}{% assign lbl = "Phiên 5 giờ" %}{% else %}{% assign m = r.week %}{% assign lbl = "Tuần" %}{% endif %}
+          {% if m %}
+          <div class="mu-m{% if m.full %} mu-full{% endif %}">
+            <div class="mu-top"><span class="mu-lbl">{{ lbl }}</span><span class="mu-pct">{{ m.pct }}<small>%</small></span></div>
+            <div class="mu-bar">
+              {% if m.fill > 0 %}<div class="mu-fill{% if m.fill >= 99 %} f100{% endif %}" style="width:{{ m.fill }}%;"></div>{% endif %}
+              {% if m.pace and m.idle != true %}<div class="mu-pace" style="left:{{ m.pace }}%;"></div>{% endif %}
+            </div>
+            <div class="mu-rs">{% if m.idle %}Chưa bắt đầu{% elsif m.reset_at != "" %}Reset <b>{{ m.reset_at }}</b> · còn <span class="L">{{ m.reset_in }}</span><span class="S">{{ m.reset_in_short }}</span>{% endif %}</div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="mu-msg">
+        {% if r.error_code == "cookie" %}<div class="b">Cookie hết hạn</div><div class="s">Cập nhật cookie {{ r.name }} trong GitHub Secrets</div>
+        {% elsif r.error_code == "nokey" %}<div class="b">Chưa có cookie</div><div class="s">Gửi /cookie trong bot Telegram</div>
+        {% else %}<div class="b">Chưa đọc được</div><div class="s">{{ r.error }}</div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if fr %}
+  <div class="mu-fr{% if fr.urgent %} urgent{% endif %}">
+    <div class="t">CLAUDE FULL RESET <i>{{ fr.left }}/{{ fr.total }} lượt</i></div>
+    <div class="big">còn {{ fr.remaining }}</div>
+    <div class="sp"></div>
+    <div class="e">{% if fr.urgent %}⚠ SẮP HẾT HẠN · {% endif %}Hết hạn <b>{{ fr.expires | split: " · " | first }}</b> {{ fr.expires | split: " · " | last }}</div>
   </div>
   {% endif %}
 </div>

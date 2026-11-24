@@ -1,6 +1,7 @@
 // Bot Telegram điều khiển plugin (chỉ chủ bot dùng được)
 import { getUsage, fetchUsage, parseCookie, getKey } from './claude.js';
-import { buildPayload } from './view.js';
+import { buildPayload, buildExt } from './view.js';
+import { getExternal, maybeDispatch, EXT } from './external.js';
 import { trmnlPreview } from './trmnl.js';
 import { esc, stamp } from './util.js';
 
@@ -61,6 +62,7 @@ const COMMANDS = [
   { command: 'status', description: '📊 Usage Claude hiện tại' },
   { command: 'cookie', description: '🔑 Gửi cookie Claude: /cookie sk-ant-...' },
   { command: 'preview', description: '🖼 Xem trước màn hình TRMNL' },
+  { command: 'refresh', description: '🔄 Lấy ngay usage ChatGPT + Gemini' },
   { command: 'settings', description: '⚙️ Cài đặt cảnh báo' },
   { command: 'trmnl', description: '🔗 Polling URL cho TRMNL' },
   { command: 'update', description: '🔄 Cập nhật code mới nhất từ GitHub' },
@@ -186,6 +188,7 @@ const HELP =
   `/status – usage Claude hiện tại\n` +
   `/cookie sk-ant-... – lưu cookie Claude (bot tự xoá tin nhắn)\n` +
   `/preview – xem trước màn hình TRMNL (đúng như lần refresh tới)\n` +
+  `/refresh – lấy ngay usage ChatGPT + Gemini (bình thường tự lấy 15 phút/lần)\n` +
   `/preview all – xem cả 4 cỡ (full, nửa ngang, nửa dọc, 1/4)\n` +
   `/settings – bật/tắt cảnh báo\n` +
   `/trmnl – Polling URL để cài plugin trên TRMNL\n` +
@@ -197,9 +200,26 @@ const VIEW_NAME = {
   markup_half_vertical: 'Nửa dọc', markup_quadrant: '1/4 màn hình',
 };
 
+function extText(rows) {
+  const L = [];
+  for (const r of rows) {
+    if (!r) continue;
+    L.push('', `<b>${r.key === 'chatgpt' ? '🟢' : '🔷'} ${esc(r.name)}</b>${r.plan ? ` · ${esc(r.plan)}` : ''}`);
+    if (r.has_data) {
+      if (r.session) L.push(`⏱ Phiên: <b>${r.session.pct}%</b> <code>${tbar(r.session.pct, 10)}</code>${r.session.reset_at ? ` · reset ${r.session.reset_at}` : ''}`);
+      if (r.week) L.push(`📅 Tuần: <b>${r.week.pct}%</b> <code>${tbar(r.week.pct, 10)}</code>${r.week.reset_at ? ` · reset ${r.week.reset_at}` : ''}`);
+      L.push(`   <i>Số liệu lúc ${r.data_at}</i>`);
+    }
+    if (r.error) L.push(`⚠️ <i>${esc(r.error)}</i>`);
+  }
+  return L.join('\n');
+}
+
 async function doStatus(env, chatId, msgId, force = true) {
   const { data, error } = await getUsage(env, { force });
-  return editOrSend(env, chatId, msgId, statusText(buildPayload(data, error)), MAIN_KB);
+  const ext = await getExternal(env);
+  const rows = EXT.map((k) => buildExt(k, ext[k]));
+  return editOrSend(env, chatId, msgId, statusText(buildPayload(data, error)) + extText(rows), MAIN_KB);
 }
 
 async function doPreview(env, chatId, all) {
@@ -322,6 +342,12 @@ async function processUpdate(env, upd, origin) {
     case '/settings': {
       const v = settingsView(await getSettings(env));
       return sendMsg(env, chatId, v.text, v.kb);
+    }
+    case '/refresh': {
+      const r = await maybeDispatch(env, true);
+      return sendMsg(env, chatId, r.status === 204
+        ? '🔄 Đang lấy usage ChatGPT + Gemini trên GitHub… khoảng 1 phút nữa gõ /status để xem.'
+        : `❌ Không kích hoạt được GitHub (${esc(JSON.stringify(r))})`);
     }
     case '/preview':
       return doPreview(env, chatId, /^(all|tat ca|tất cả)$/i.test(arg));

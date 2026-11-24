@@ -1,0 +1,35 @@
+name: Lấy usage ChatGPT + Gemini
+
+# Worker tự kích hoạt mỗi 15 phút (workflow_dispatch). Lịch dưới đây chỉ là dự phòng.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7 */3 * * *'
+
+concurrency:
+  group: collect
+  cancel-in-progress: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cài thư viện điều khiển Chrome (chỉ khi có cookie Gemini)
+        env:
+          GEMINI_COOKIE: ${{ secrets.GEMINI_COOKIE }}
+        run: |
+          if [ -n "$GEMINI_COOKIE" ]; then npm install --no-save --no-audit --no-fund playwright-core@1 >/dev/null; fi
+
+      - name: Lấy usage và gửi về Worker
+        env:
+          CHATGPT_COOKIE: ${{ secrets.CHATGPT_COOKIE }}
+          GEMINI_COOKIE: ${{ secrets.GEMINI_COOKIE }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: node scripts/collect.mjs

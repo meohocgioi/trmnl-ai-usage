@@ -1,0 +1,54 @@
+{% comment %} Màn hình gộp Claude + ChatGPT + Gemini (khi có từ 2 dịch vụ trở lên) {% endcomment %}
+{% assign fr = claude.reset %}
+<div class="mu">
+  <div class="cu-hd">
+    <div class="cu-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.2-5.2"/></svg></div>
+    <div class="cu-title">AI USAGE</div>
+    <div class="cu-sp"></div>
+    <div class="cu-upd">Cập nhật {{ updated }}</div>
+  </div>
+
+  <div class="mu-rows">
+    {% for r in rows %}
+    <div class="mu-row">
+      <div class="mu-name">
+        <div class="n">{{ r.name }}</div>
+        {% if r.plan != "" %}<div class="p">{{ r.plan }}</div>{% endif %}
+        {% if r.error_code == "cookie" %}<div class="w">⚠ COOKIE</div>{% elsif r.stale %}<div class="w">⚠ CŨ {{ r.data_at | split: " " | first }}</div>{% endif %}
+        {% if r.key == "claude" and fr %}<div class="fr">♻ {{ fr.left }}/{{ fr.total }} · {{ fr.remaining_short }}</div>{% endif %}
+      </div>
+      {% if r.has_data %}
+        {% assign pairs = "session,week" | split: "," %}
+        {% for k in pairs %}
+          {% if k == "session" %}{% assign m = r.session %}{% assign lbl = "Phiên 5 giờ" %}{% else %}{% assign m = r.week %}{% assign lbl = "Tuần" %}{% endif %}
+          {% if m %}
+          <div class="mu-m{% if m.full %} mu-full{% endif %}">
+            <div class="mu-top"><span class="mu-lbl">{{ lbl }}</span><span class="mu-pct">{{ m.pct }}<small>%</small></span></div>
+            <div class="mu-bar">
+              {% if m.fill > 0 %}<div class="mu-fill{% if m.fill >= 99 %} f100{% endif %}" style="width:{{ m.fill }}%;"></div>{% endif %}
+              {% if m.pace and m.idle != true %}<div class="mu-pace" style="left:{{ m.pace }}%;"></div>{% endif %}
+            </div>
+            <div class="mu-rs">{% if m.idle %}Chưa bắt đầu{% elsif m.reset_at != "" %}Reset <b>{{ m.reset_at }}</b> · còn <span class="L">{{ m.reset_in }}</span><span class="S">{{ m.reset_in_short }}</span>{% endif %}</div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="mu-msg">
+        {% if r.error_code == "cookie" %}<div class="b">Cookie hết hạn</div><div class="s">Cập nhật cookie {{ r.name }} trong GitHub Secrets</div>
+        {% elsif r.error_code == "nokey" %}<div class="b">Chưa có cookie</div><div class="s">Gửi /cookie trong bot Telegram</div>
+        {% else %}<div class="b">Chưa đọc được</div><div class="s">{{ r.error }}</div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if fr %}
+  <div class="mu-fr{% if fr.urgent %} urgent{% endif %}">
+    <div class="t">CLAUDE FULL RESET <i>{{ fr.left }}/{{ fr.total }} lượt</i></div>
+    <div class="big">còn {{ fr.remaining }}</div>
+    <div class="sp"></div>
+    <div class="e">{% if fr.urgent %}⚠ SẮP HẾT HẠN · {% endif %}Hết hạn <b>{{ fr.expires | split: " · " | first }}</b> {{ fr.expires | split: " · " | last }}</div>
+  </div>
+  {% endif %}
+</div>

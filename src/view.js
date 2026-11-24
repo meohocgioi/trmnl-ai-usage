@@ -69,3 +69,34 @@ export function buildPayload(data, error, now = Date.now()) {
   p.parts = (data.parts || []).filter((x) => x.pct > 0 || x.share > 0).slice(0, 3);
   return p;
 }
+
+// ---------- ChatGPT / Gemini (số liệu từ GitHub Actions) ----------
+const NAMES = { chatgpt: 'ChatGPT', gemini: 'Gemini' };
+const PLAN = (s) => (s ? String(s).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : '');
+
+export function buildExt(key, rec, now = Date.now()) {
+  const p = {
+    key, name: NAMES[key] || key, plan: PLAN(rec?.plan), has_data: false,
+    session: null, week: null, error: '', error_code: '', stale: false, data_at: '',
+  };
+  if (!rec) return null; // chưa cài cookie
+  if (rec.error) { p.error = rec.error.message || ''; p.error_code = rec.error.code || 'http'; }
+  if (rec.session || rec.week) {
+    p.has_data = true;
+    p.data_at = stamp(rec.at);
+    p.session = bar(rec.session, (rec.session?.windowSec || 18000) * 1000, now) || null;
+    if (p.session && (!rec.session.resetsAt || rec.session.resetsAt <= now)) p.session.idle = true;
+    p.week = bar(rec.week, (rec.week?.windowSec || 604800) * 1000, now);
+    // Bộ lấy số liệu chạy 15 phút/lần → coi là cũ khi quá 45 phút
+    p.stale = now - (rec.at || 0) > 45 * 60000;
+  }
+  return p;
+}
+
+// Một hàng gọn cho màn hình gộp nhiều dịch vụ
+export function claudeRow(c) {
+  return {
+    key: 'claude', name: 'Claude', plan: c.plan, has_data: c.has_data,
+    session: c.session, week: c.week, error: c.error, error_code: c.error_code, stale: c.stale, data_at: c.data_at,
+  };
+}

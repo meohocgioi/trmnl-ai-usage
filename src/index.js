@@ -1,5 +1,7 @@
 import { getUsage } from './claude.js';
-import { buildPayload } from './view.js';
+import { buildPayload, buildExt, claudeRow } from './view.js';
+import { handleIngest, getExternal, maybeDispatch, EXT } from './external.js';
+import { hhmm, stamp } from './util.js';
 import { handleTelegram, setupWebhook } from './telegram.js';
 import { runAlerts } from './alerts.js';
 
@@ -18,6 +20,18 @@ async function autoConnect(env) {
   if (r.ok) await env.KV.put('tg:ready', env.TELEGRAM_BOT_TOKEN.split(':')[0]);
 }
 
+// Toàn bộ dữ liệu cho màn hình TRMNL: Claude (chi tiết) + các dịch vụ khác đã cài cookie
+export async function screenPayload(env, data, error, now = Date.now()) {
+  const claude = buildPayload(data, error, now);
+  const ext = await getExternal(env);
+  const rows = [claudeRow(claude)];
+  for (const k of EXT) {
+    const r = buildExt(k, ext[k], now);
+    if (r) rows.push(r);
+  }
+  return { updated: hhmm(now), updated_full: stamp(now), multi: rows.length > 1, count: rows.length, rows, claude };
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -29,8 +43,10 @@ export default {
     if (p === '/trmnl') {
       // Số liệu được cron làm mới mỗi 5 phút; TRMNL chỉ gọi claude.ai khi bản lưu đã cũ hơn 10 phút
       const { data, error } = await getUsage(env, { maxAge: 10 * 60000 });
-      return json({ claude: buildPayload(data, error) });
+      return json(await screenPayload(env, data, error));
     }
+
+    if (p === '/ingest' && req.method === 'POST') return handleIngest(req, env);
 
     if (p === '/tg' && req.method === 'POST') return handleTelegram(req, env, ctx);
     // Chẩn đoán đường tới Telegram: token giả (phải trả 401/404 nhanh) và token thật (getMe), có đo thời gian
@@ -63,5 +79,6 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('alerts', e)));
     ctx.waitUntil(autoConnect(env).catch((e) => console.error('autoConnect', e)));
+    ctx.waitUntil(maybeDispatch(env).catch((e) => console.error('dispatch', e)));
   },
 };
