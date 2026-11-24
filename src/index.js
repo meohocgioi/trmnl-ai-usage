@@ -57,23 +57,6 @@ export default {
     if (p === '/ingest' && req.method === 'POST') return handleIngest(req, env);
 
     if (p === '/tg' && req.method === 'POST') return handleTelegram(req, env, ctx);
-    // Chẩn đoán đường tới Telegram: token giả (phải trả 401/404 nhanh) và token thật (getMe), có đo thời gian
-    if (p === '/diag/tg') {
-      const out = {};
-      for (const [k, tok] of [['fake', '123456:fake'], ['real', env.TELEGRAM_BOT_TOKEN || '']]) {
-        const t0 = Date.now();
-        try {
-          const r = await fetch(`https://api.telegram.org/bot${tok}/getMe`);
-          const j = await r.json().catch(() => null);
-          out[k] = { status: r.status, ms: Date.now() - t0, desc: j?.description || null, bot: j?.result?.username || null };
-        } catch (e) { out[k] = { err: String(e), ms: Date.now() - t0 }; }
-      }
-      const tk = env.TELEGRAM_BOT_TOKEN || '';
-      out.token_shape = { bot_id: tk.split(':')[0], len: tk.length, has_colon: tk.includes(':'), has_space: /\s/.test(tk), starts_bot: /^bot/i.test(tk) };
-      out.colo = req.cf?.colo || null;
-      return json(out);
-    }
-
     if (p === '/setup') {
       await env.KV.put('origin', url.origin);
       const r = await setupWebhook(env, url.origin, { welcome: true });
