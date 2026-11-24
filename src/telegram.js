@@ -73,21 +73,12 @@ const MAIN_KB = [
   [{ text: '⚙️ Cài đặt', callback_data: 'settings' }, { text: '🔑 Cookie', callback_data: 'cookiehelp' }],
 ];
 
-export async function setupWebhook(env, origin) {
+export async function setupWebhook(env, origin, opts = {}) {
   if (!env.TELEGRAM_BOT_TOKEN) return { ok: false, error: 'Chưa có TELEGRAM_BOT_TOKEN' };
   const url = origin + '/tg';
-  // Telegram đôi khi trả 429 — chờ đúng retry_after rồi thử lại (tối đa 2 lần)
-  const retry = async (method, body) => {
-    let r;
-    for (let i = 0; i < 3; i++) {
-      r = await tg(env, method, body);
-      const wait = r?.parameters?.retry_after;
-      if (r.ok || r.error_code !== 429 || !wait || wait > 40 || i >= 1) break;
-      await new Promise((res) => setTimeout(res, (wait + 1) * 1000));
-    }
-    return r;
-  };
+  const retry = (method, body) => tg(env, method, body);
   const me = await tg(env, 'getMe', {});
+  if (!me.ok) return { ok: false, version: env.VERSION || null, bot: me }; // bot đang bị Telegram khoá tạm — thử lại sau
   let info = await tg(env, 'getWebhookInfo', {});
   let webhook = { ok: true, skipped: 'đã đúng URL' };
   if (info?.result?.url !== url) {
@@ -101,6 +92,14 @@ export async function setupWebhook(env, origin) {
   const commands = await retry('setMyCommands', { commands: COMMANDS });
   let notified = false;
   const owner = await ownerId(env);
+  const hookOk = info?.result?.url === url;
+  // Lần đầu bot nối được: chào + hướng dẫn gửi cookie
+  if (opts.welcome && hookOk && owner && !(await env.KV.get('welcomed:' + env.TELEGRAM_BOT_TOKEN.split(':')[0]))) {
+    const has = !!(await getKey(env));
+    await sendMsg(env, owner,
+      `👋 <b>Bot Claude usage đã kết nối!</b>\n\n` + (has ? 'Đã có cookie Claude. Bấm 📊 Usage để xem.' : '🔑 <b>Bước tiếp theo:</b> gửi cookie Claude.\n\n' + COOKIE_HELP), MAIN_KB);
+    await env.KV.put('welcomed:' + env.TELEGRAM_BOT_TOKEN.split(':')[0], '1');
+  }
   if (owner && env.VERSION && (await env.KV.get('notifiedVersion')) !== env.VERSION) {
     await sendMsg(env, owner, `✅ <b>Đã cập nhật xong!</b>\n🏷 Phiên bản <code>${esc(env.VERSION)}</code>\n📝 ${esc(env.VERSION_MSG || '')}`, MAIN_KB);
     await env.KV.put('notifiedVersion', env.VERSION);

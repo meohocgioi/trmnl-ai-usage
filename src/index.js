@@ -9,6 +9,15 @@ const json = (o, status = 200) =>
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
   });
 
+// Telegram có thể tạm khoá bot mới tạo (lỗi 429). Cron tự thử nối webhook mỗi 10 phút tới khi được,
+// rồi nhắn chủ bot. Origin lấy từ lần gọi /setup gần nhất (GitHub Actions gọi sau mỗi lần deploy).
+async function autoConnect(env) {
+  if (!env.TELEGRAM_BOT_TOKEN || (await env.KV.get('tg:ready')) === env.TELEGRAM_BOT_TOKEN.split(':')[0]) return;
+  const origin = (await env.KV.get('origin')) || 'https://trmnl-ai-usage.meohocgioi.workers.dev';
+  const r = await setupWebhook(env, origin, { welcome: true });
+  if (r.ok) await env.KV.put('tg:ready', env.TELEGRAM_BOT_TOKEN.split(':')[0]);
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -40,12 +49,18 @@ export default {
       return json(out);
     }
 
-    if (p === '/setup') return json(await setupWebhook(env, url.origin));
+    if (p === '/setup') {
+      await env.KV.put('origin', url.origin);
+      const r = await setupWebhook(env, url.origin, { welcome: true });
+      if (r.ok && env.TELEGRAM_BOT_TOKEN) await env.KV.put('tg:ready', env.TELEGRAM_BOT_TOKEN.split(':')[0]);
+      return json(r);
+    }
 
     return new Response('Not found', { status: 404 });
   },
 
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('alerts', e)));
+    ctx.waitUntil(autoConnect(env).catch((e) => console.error('autoConnect', e)));
   },
 };
