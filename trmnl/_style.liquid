@@ -1,0 +1,110 @@
+<style>
+  .cu{--pad:18px;--gap:14px;display:flex;flex-direction:column;gap:var(--gap);width:100%;height:100%;box-sizing:border-box;padding:var(--pad) calc(var(--pad) + 4px);font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#000;background:#fff;}
+  .cu *{box-sizing:border-box;}
+  /* ---------- Thanh tiêu đề ---------- */
+  .cu-hd{flex:none;display:flex;align-items:center;gap:10px;line-height:1;}
+  .cu-logo{flex:none;width:30px;height:30px;border-radius:8px;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;}
+  .cu-logo svg{width:20px;height:20px;}
+  .cu-title{font-size:24px;font-weight:900;letter-spacing:1.5px;}
+  .cu-plan{font-size:13px;font-weight:800;letter-spacing:1px;border:2px solid #000;border-radius:999px;padding:3px 9px;}
+  .cu-sp{flex:1;}
+  .cu-warn{font-size:13px;font-weight:800;background:#000;color:#fff;border-radius:6px;padding:4px 8px;white-space:nowrap;}
+  .cu-upd{font-size:14px;white-space:nowrap;}
+  /* ---------- Thanh usage ---------- */
+  .cu-meters{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-around;gap:var(--gap);}
+  .cu-m{display:flex;align-items:center;gap:18px;}
+  .cu-pct{flex:none;width:150px;font-size:66px;font-weight:900;letter-spacing:-2px;line-height:.9;text-align:right;}
+  .cu-pct small{font-size:.5em;letter-spacing:0;margin-left:2px;}
+  .cu-mb{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
+  .cu-row{display:flex;align-items:baseline;gap:10px;white-space:nowrap;}
+  .cu-lbl{font-size:19px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;}
+  .cu-rs{flex:1;min-width:0;text-align:right;font-size:17px;overflow:hidden;text-overflow:ellipsis;}
+  .cu-rs b{font-weight:900;}
+  .cu-bar{position:relative;height:30px;border:3px solid #000;border-radius:9px;overflow:visible;}
+  .cu-fill{position:absolute;left:0;top:0;bottom:0;background:#000;border-radius:5px 0 0 5px;}
+  .cu-fill.f100{border-radius:5px;}
+  .cu-pace{position:absolute;top:-9px;bottom:-9px;width:4px;margin-left:-2px;background:#000;border:1px solid #fff;outline:1px solid #000;}
+  .cu-sub{display:flex;gap:10px;font-size:14px;white-space:nowrap;}
+  .cu-sub .r{flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;}
+  .cu-full .cu-pct{text-decoration:underline;text-decoration-thickness:4px;}
+  /* ---------- Full reset ---------- */
+  .cu-fr{flex:none;display:flex;align-items:stretch;border:3px solid #000;border-radius:12px;overflow:hidden;min-height:92px;}
+  .cu-fr-tag{flex:none;width:172px;background:#000;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:8px;}
+  .cu-fr-tag .t{font-size:18px;font-weight:900;letter-spacing:2px;}
+  .cu-dots{display:flex;gap:7px;align-items:center;}
+  .cu-dot{width:18px;height:18px;border-radius:50%;border:3px solid #fff;}
+  .cu-dot.on{background:#fff;}
+  .cu-dots .n{font-size:17px;font-weight:800;margin-left:4px;}
+  .cu-fr-mid{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:6px 18px;}
+  .cu-fr-big{font-size:38px;font-weight:900;letter-spacing:-.5px;line-height:1.05;white-space:nowrap;}
+  .cu-fr-cap{font-size:14px;}
+  .cu-fr-end{flex:none;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:6px 18px;border-left:3px solid #000;text-align:right;}
+  .cu-fr-end .k{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+  .cu-fr-end .v{font-size:32px;font-weight:900;line-height:1.05;}
+  .cu-fr-end .d{font-size:15px;white-space:nowrap;}
+  .cu-fr.none .cu-fr-mid{font-size:18px;}
+  .cu-fr.urgent .cu-fr-mid{background:#000;color:#fff;}
+  .cu-fr.urgent .cu-fr-cap{font-weight:800;}
+  .cu .S{display:none;}
+  .sz-hv .L,.sz-q .L{display:none;}.sz-hv .S,.sz-q .S{display:inline;}
+  .sz-hh .cu-in,.sz-hh .cu-sub .r{display:none;}
+  /* ---------- Chân trang ---------- */
+  .cu-ft{flex:none;display:flex;gap:14px;font-size:13px;white-space:nowrap;}
+  .cu-ft .r{flex:1;text-align:right;}
+  .cu-chip{font-weight:700;}
+  /* ---------- Trạng thái trống / lỗi ---------- */
+  .cu-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;border:3px dashed #000;border-radius:14px;padding:16px;}
+  .cu-empty .b{font-size:30px;font-weight:900;}
+  .cu-empty .s{font-size:17px;}
+
+  /* ===== Nửa ngang (800×240) ===== */
+  .sz-hh .cu{--pad:10px;--gap:8px;}
+  .sz-hh .cu-hd .cu-logo{width:24px;height:24px;border-radius:6px;}.sz-hh .cu-logo svg{width:16px;height:16px;}
+  .sz-hh .cu-title{font-size:19px;}
+  .sz-hh .cu-meters{flex-direction:row;}
+  .sz-hh .cu-m{flex:1;min-width:0;gap:10px;}
+  .sz-hh .cu-pct{width:auto;min-width:96px;font-size:46px;}
+  .sz-hh .cu-lbl{font-size:14px;}.sz-hh .cu-rs{font-size:13px;}
+  .sz-hh .cu-bar{height:22px;}.sz-hh .cu-sub{font-size:12px;}
+  .sz-hh .cu-fr{min-height:0;height:52px;border-width:2px;}
+  .sz-hh .cu-fr-tag{width:auto;flex-direction:row;padding:0 12px;gap:10px;}
+  .sz-hh .cu-fr-tag .t{font-size:14px;letter-spacing:1px;}.sz-hh .cu-dot{width:13px;height:13px;border-width:2px;}.sz-hh .cu-dots .n{font-size:14px;}
+  .sz-hh .cu-fr-big{font-size:24px;}.sz-hh .cu-fr-cap{display:none;}
+  .sz-hh .cu-fr-end{border-left-width:2px;flex-direction:row;align-items:center;gap:8px;}.sz-hh .cu-fr-end .v{font-size:22px;}.sz-hh .cu-fr-end .d{font-size:13px;}
+  .sz-hh .cu-ft{display:none;}
+
+  /* ===== Nửa dọc (400×480) ===== */
+  .sz-hv .cu{--pad:12px;--gap:10px;}
+  .sz-hv .cu-title{font-size:16px;letter-spacing:.5px;white-space:nowrap;}.sz-hv .cu-hd{gap:7px;}.sz-hv .cu-warn{font-size:10px;padding:3px 5px;}.sz-hv .cu-upd{font-size:12px;}.sz-hv .cu-plan{display:none;}
+  .sz-hv .cu-m{flex-direction:column;align-items:stretch;gap:4px;}
+  .sz-hv .cu-pct{width:auto;text-align:left;font-size:52px;}
+  .sz-hv .cu-m{position:relative;}
+  .sz-hv .cu-row{position:absolute;top:2px;right:0;left:130px;flex-direction:column;align-items:flex-end;gap:2px;}
+  .sz-hv .cu-lbl{font-size:15px;}.sz-hv .cu-rs{font-size:13px;}
+  .sz-hv .cu-bar{height:24px;}.sz-hv .cu-sub{font-size:12px;}
+  .sz-hv .cu-fr{flex-direction:column;}
+  .sz-hv .cu-fr-tag{width:auto;flex-direction:row;padding:6px 10px;gap:10px;}
+  .sz-hv .cu-fr-tag .t{font-size:15px;}
+  .sz-hv .cu-fr-mid{padding:6px 12px 2px;}.sz-hv .cu-fr-big{font-size:28px;}
+  .sz-hv .cu-fr-end{border-left:none;align-items:flex-start;text-align:left;padding:0 12px 8px;flex-direction:row;align-items:baseline;gap:6px;}
+  .sz-hv .cu-fr-end .v{font-size:20px;}.sz-hv .cu-fr-end .d{font-size:13px;}
+  .sz-hv .cu-ft{flex-direction:column;gap:2px;font-size:11px;}.sz-hv .cu-ft .r{text-align:left;}
+
+  /* ===== 1/4 màn hình (400×240) ===== */
+  .sz-q .cu{--pad:8px;--gap:6px;}
+  .sz-q .cu-hd{display:none;}
+  .sz-q .cu-m{gap:8px;}
+  .sz-q .cu-pct{width:86px;font-size:38px;letter-spacing:-1px;}
+  .sz-q .cu-mb{gap:4px;}
+  .sz-q .cu-lbl{font-size:12px;letter-spacing:.5px;}.sz-q .cu-rs{font-size:12px;}
+  .sz-q .cu-bar{height:16px;border-width:2px;border-radius:6px;}.sz-q .cu-fill{border-radius:3px 0 0 3px;}
+  .sz-q .cu-pace{top:-5px;bottom:-5px;width:3px;}
+  .sz-q .cu-sub{display:none;}
+  .sz-q .cu-fr{min-height:0;height:42px;border-width:2px;border-radius:8px;}
+  .sz-q .cu-fr-tag{width:auto;flex-direction:row;padding:0 8px;gap:6px;}
+  .sz-q .cu-fr-tag .t{font-size:11px;letter-spacing:.5px;}.sz-q .cu-dot{width:10px;height:10px;border-width:2px;}.sz-q .cu-dots .n{font-size:11px;}
+  .sz-q .cu-fr-mid{padding:0 8px;}.sz-q .cu-fr-big{font-size:18px;}.sz-q .cu-fr-cap{display:none;}
+  .sz-q .cu-fr-end{border-left-width:2px;padding:0 8px;}.sz-q .cu-fr-end .k{display:none;}.sz-q .cu-fr-end .v{font-size:15px;}.sz-q .cu-fr-end .d{font-size:10px;}
+  .sz-q .cu-ft{display:none;}
+  .sz-q .cu-empty .b{font-size:18px;}.sz-q .cu-empty .s{font-size:12px;}
+</style>

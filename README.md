@@ -36,9 +36,9 @@ Trong bot Telegram gõ `/cookie` để xem hướng dẫn lấy cookie `sessionK
 ### 3. TRMNL
 Tạo **Private Plugin** → Strategy **Polling** → Polling URL:
 `https://trmnl-ai-usage.meohocgioi.workers.dev/trmnl`
-Markup: dán `trmnl/shared.liquid` vào ô **Shared**, và `trmnl/full.liquid`, `half_horizontal.liquid`, `half_vertical.liquid`, `quadrant.liquid` vào từng ô tương ứng.
+Markup: dán `trmnl/shared.liquid` vào ô **Shared** (chứa toàn bộ giao diện), và 4 file `full` / `half_horizontal` / `half_vertical` / `quadrant` (mỗi file 1 dòng) vào từng ô tương ứng.
 
-Sửa giao diện: chỉ sửa `trmnl/_body.liquid` rồi chạy `node scripts/gen-views.mjs` để tạo lại 4 file.
+Sửa giao diện: sửa `trmnl/_style.liquid` (CSS) / `trmnl/_body.liquid` (HTML + Liquid) rồi chạy `node scripts/gen-views.mjs`.
 
 ## Lệnh Telegram
 `/status` `/cookie` `/preview` `/preview all` `/settings` `/trmnl` `/update` `/version` `/help`
